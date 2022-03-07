@@ -10,6 +10,7 @@ from flask import render_template, request, redirect, url_for, flash
 from flask_login import login_user, logout_user, current_user, login_required
 from app.forms import LoginForm
 from app.models import UserProfile
+from werkzeug.security import check_password_hash
 
 
 ###
@@ -34,8 +35,11 @@ def login():
     if request.method == "POST":
         # change this to actually validate the entire form submission
         # and not just one field
-        if form.username.data:
+        if form.validate_on_submit():
             # Get the username and password values from the form.
+           
+            username = form.username.data
+            password = form.password.data
 
             # using your model, query database for a user based on the username
             # and password submitted. Remember you need to compare the password hash.
@@ -43,6 +47,19 @@ def login():
             # Then store the result of that query to a `user` variable so it can be
             # passed to the login_user() method below.
 
+            user = UserProfile.query.filter_by(username=username).first()
+
+            if user is not None and check_password_hash(user.password,password):
+                remember_me = False
+
+                if 'remember_me' in request.form:
+                    remember_me = True
+
+                login_user(user,remember=remember_me)
+
+                flash('logged in succesfully.','success')
+
+                return redirect(url_for('about'))
             # get user id, load into session
             login_user(user)
 
